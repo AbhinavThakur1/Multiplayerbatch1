@@ -1,20 +1,24 @@
-using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
+using System.Collections.Generic;
 using TMPro;
-using UnityEngine.UI;
+using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PhotonMultiplayerSetUp : MonoBehaviourPunCallbacks
 {
-    [SerializeField] GameObject _connectingPanel, _roomPanel, _roomLobbyPanel;
+    [SerializeField] GameObject _connectingPanel, _roomPanel, _roomLobbyPanel, _playerInRoomTextPrefab;
     [SerializeField] TMP_InputField _roomIdInputF, _playerNameInputF;
     [SerializeField] Button _createBtn, _joinBtn, _gameStartBtn;
     [SerializeField] TMP_Text _roomCreaterName;
-    bool _connected;
+    [SerializeField] Transform _playerNameSpawnPostion;
+    //bool _connected;
 
     void Start()
     {
         PhotonNetwork.ConnectUsingSettings();
+        PhotonNetwork.AutomaticallySyncScene = true;
         _createBtn.onClick.AddListener(CreateRoom);
         _joinBtn.onClick.AddListener(JoinRoom);
         _gameStartBtn.onClick.AddListener(GameStart);
@@ -49,6 +53,7 @@ public class PhotonMultiplayerSetUp : MonoBehaviourPunCallbacks
         _roomPanel.SetActive(false);
         _roomLobbyPanel.SetActive(true);
         _roomCreaterName.text = PhotonNetwork.CurrentRoom.Name + " crated by " + PhotonNetwork.MasterClient.NickName;
+        PlayerListRefresh();
     }
 
     public override void OnJoinRoomFailed(short returnCode, string message)
@@ -83,6 +88,72 @@ public class PhotonMultiplayerSetUp : MonoBehaviourPunCallbacks
 
     void GameStart()
     {
-        PhotonNetwork.LoadLevel(1);
+        if (PhotonNetwork.LocalPlayer.IsMasterClient)
+        {
+            PhotonNetwork.LoadLevel(1);
+        }
     }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        base.OnPlayerEnteredRoom(newPlayer);
+        PlayerListRefresh();
+    }
+
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        base.OnPlayerLeftRoom(otherPlayer);
+        PlayerListRefresh();
+    }
+    
+    void PlayerListRefresh()
+    {
+        foreach (GameObject name in GameObject.FindGameObjectsWithTag("Name"))
+        {
+            Destroy(name);
+        }
+        Dictionary<int, Player> _players = PhotonNetwork.CurrentRoom.Players;
+        foreach (Player player in _players.Values)
+        {
+            GameObject _playerNameSpawn = Instantiate(_playerInRoomTextPrefab, _playerNameSpawnPostion);
+            _playerNameSpawn.name = player.UserId;
+            _playerNameSpawn.GetComponent<TMP_Text>().text = player.NickName;
+        }
+    }
+
+    //public override void OnPlayerEnteredRoom(Player newPlayer)
+    //{
+    //    base.OnPlayerEnteredRoom(newPlayer);
+    //    GameObject[] nameobj = GameObject.FindGameObjectsWithTag("Name");
+    //    foreach (GameObject game in nameobj)
+    //    {
+    //        Destroy(game);
+    //    }
+    //    Dictionary<int, Player> i = PhotonNetwork.CurrentRoom.Players;
+    //    foreach (Player player in i.Values)
+    //    {
+    //        GameObject text = Instantiate(_playerNamePrefab, _nameDisplayPosition);
+    //        text.name = player.UserId;
+    //        text.GetComponent<TMP_Text>().text = player.NickName;
+    //    }
+    //    _roomCreaterName.text = "Room: '" + PhotonNetwork.CurrentRoom.Name + "' Created by: '" + PhotonNetwork.MasterClient.NickName + "'";
+    //}
+    //public override void OnPlayerLeftRoom(Player otherPlayer)
+    //{
+    //    base.OnPlayerLeftRoom(otherPlayer);
+    //    GameObject[] nameobj = GameObject.FindGameObjectsWithTag("Name");
+    //    foreach (GameObject game in nameobj)
+    //    {
+    //        Destroy(game);
+    //    }
+    //    Dictionary<int, Player> i = PhotonNetwork.CurrentRoom.Players;
+    //    foreach (Player player in i.Values)
+    //    {
+    //        GameObject text = Instantiate(_playerNamePrefab, _nameDisplayPosition);
+    //        text.name = player.UserId;
+    //        text.GetComponent<TMP_Text>().text = player.NickName;
+    //    }
+    //}
+
+    
 }
