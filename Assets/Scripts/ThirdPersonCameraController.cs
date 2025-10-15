@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 public class ThirdPersonCameraController : MonoBehaviour
 {
     CinemachineOrbitalFollow _cameraCM;
-    float _inputX, _inputY, _verticalDown = 45f, _verticalUp = -20, _verticalClamp = 10f;
+    float _inputX, _inputY, _verticalDown = 45f, _verticalUp = 25f, _verticalClamp = 65f;
     public float _sensitivity = 300f;
 
     private void Start()
@@ -14,7 +14,7 @@ public class ThirdPersonCameraController : MonoBehaviour
         _sensitivity = PlayerPrefs.GetFloat("sens") / 2f;
     }
 
-    void Update()
+    void LateUpdate()
     {
         PcThirdPersonControl();
     }

@@ -1,17 +1,18 @@
+using Photon.Pun;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : MonoBehaviourPunCallbacks
 {
     [SerializeField] GameObject _orientation, _thirdPersonCamera, _firtPersonCamera;
     AudioSource _audioSource;
     FixedJoystick _joystick;
+    PhotonView _photonView;
     Slider _progressSlider, _senstivity;
     [SerializeField] AudioClip _jumpSound, _gunSound;
     Rigidbody _rb;
-    int _scene = 0;
     Vector3 _inputDir;
     Animator _animator;
     [SerializeField] float _jumpForce, _groundCheckMaxDistance, _speed, _walkSpeed = 20f, _runSpeed = 40f , _bulletDistance;
@@ -22,25 +23,9 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
+        _photonView = GetComponent<PhotonView>();
         _progressSlider = GameObject.FindGameObjectWithTag("Respawn").GetComponent<Slider>();
         _senstivity = GameObject.FindGameObjectWithTag("Finish").GetComponent<Slider>();
-        if (!PlayerPrefs.HasKey("level"))
-        {
-            PlayerPrefs.SetInt("level", 0);
-            _scene = PlayerPrefs.GetInt("level");
-            if (SceneManager.GetActiveScene().buildIndex != _scene)
-            {
-                StartCoroutine(LoadingScreen(_scene));
-            }
-        }
-        else
-        {
-            _scene =  PlayerPrefs.GetInt("level");
-            if (SceneManager.GetActiveScene().buildIndex != _scene)
-            {
-                StartCoroutine(LoadingScreen(_scene));
-            }
-        }
         if (!PlayerPrefs.HasKey("sens"))
         {
             PlayerPrefs.SetFloat("sens", _sens);
@@ -50,6 +35,11 @@ public class PlayerMovement : MonoBehaviour
         {
             _sens = PlayerPrefs.GetFloat("sens");
             _senstivity.value = _sens;
+        }
+        if (!_photonView.IsMine)
+        {
+            _thirdPersonCamera.SetActive(false);
+            _firtPersonCamera.SetActive(false);
         }
         _senstivity.onValueChanged.AddListener(SliderValueChange);
         //_joystick = FindFirstObjectByType<FixedJoystick>();
@@ -70,12 +60,18 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        KeyControls();
+        if (photonView.IsMine)
+        {
+            KeyControls();
+        }
     }
 
     private void FixedUpdate()
     {
-        Movement();
+        if (photonView.IsMine)
+        {
+            Movement();
+        }
     }
 
     void Movement()
@@ -177,24 +173,24 @@ public class PlayerMovement : MonoBehaviour
                 _thirdPersonCamera.SetActive(false);
             }
         }
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            if(SceneManager.GetActiveScene().buildIndex < 2)
-            {
-                _scene++;
-                PlayerPrefs.SetInt("level", _scene);
-                StartCoroutine(LoadingScreen(_scene));
-            }
-        }
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            if (SceneManager.GetActiveScene().buildIndex > 0)
-            {
-                _scene--;
-                PlayerPrefs.SetInt("level", _scene);
-                StartCoroutine(LoadingScreen(_scene));
-            }
-        }
+        //if (Input.GetKeyDown(KeyCode.Q))
+        //{
+        //    if(SceneManager.GetActiveScene().buildIndex < 2)
+        //    {
+        //        _scene++;
+        //        PlayerPrefs.SetInt("level", _scene);
+        //        StartCoroutine(LoadingScreen(_scene));
+        //    }
+        //}
+        //if (Input.GetKeyDown(KeyCode.E))
+        //{
+        //    if (SceneManager.GetActiveScene().buildIndex > 0)
+        //    {
+        //        _scene--;
+        //        PlayerPrefs.SetInt("level", _scene);
+        //        StartCoroutine(LoadingScreen(_scene));
+        //    }
+        //}
         //if (Input.GetKey(KeyCode.A))
         //{
         //    transform.position -= new Vector3(1f, 0f, 0f);
