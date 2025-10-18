@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class PlayerMovement : MonoBehaviourPunCallbacks
 {
     [SerializeField] GameObject _orientation, _thirdPersonCamera, _firtPersonCamera;
+    [SerializeField] Image _healthBar;
     AudioSource _audioSource;
     FixedJoystick _joystick;
     PhotonView _photonView;
@@ -19,11 +20,13 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
     [SerializeField] LayerMask _layerMask;
     RaycastHit _rayHit;
     float _inputY, _inputX;
-    public float _sens = 300f;
+    public float _sens = 300f, _health, _maxhealth = 100f;
 
     void Start()
     {
+        _health = _maxhealth;
         _photonView = GetComponent<PhotonView>();
+        _photonView.RPC("HealthUpdate", RpcTarget.All, _health);
         _progressSlider = GameObject.FindGameObjectWithTag("Respawn").GetComponent<Slider>();
         _senstivity = GameObject.FindGameObjectWithTag("Finish").GetComponent<Slider>();
         if (!PlayerPrefs.HasKey("sens"))
@@ -72,6 +75,7 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
         {
             Movement();
         }
+        _healthBar.fillAmount = _health / _maxhealth;
     }
 
     void Movement()
@@ -251,7 +255,7 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
             {
                 if (_rayHit.collider.GetComponent<EnemyAi>())
                 {
-                    _rayHit.collider.GetComponent<EnemyAi>().GotHit();
+                    _rayHit.collider.GetComponent<EnemyAi>().GotHit(gameObject);
                 }
             }
         }
@@ -262,7 +266,7 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
             {
                 if (_rayHit.collider.GetComponent<EnemyAi>())
                 {
-                    _rayHit.collider.GetComponent<EnemyAi>().GotHit();
+                    _rayHit.collider.GetComponent<EnemyAi>().GotHit(gameObject);
                 }
             }
         }
@@ -289,9 +293,19 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
 
     public void GotHit()
     {
-        Debug.Log("Sad guy hit me");
+        if (_health > 0)
+        {
+            _health -= 20f;
+            _photonView.RPC("HealthUpdate", RpcTarget.AllBuffered, _health);
+            //Debug.Log("Sad guy hit me");
+        }
     }
 
+    [PunRPC]
+    void HealthUpdate(float _newHealth)
+    {
+        _health = _newHealth;
+    }
     //private void OnCollisionEnter(Collision collision)
     //{
     //    Debug.Log(collision.collider.gameObject.name + "Collision start");
