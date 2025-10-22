@@ -6,12 +6,12 @@ using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviourPunCallbacks
 {
-    [SerializeField] GameObject _orientation, _thirdPersonCamera, _firtPersonCamera;
+    [SerializeField] GameObject _orientation, _thirdPersonCamera, _firtPersonCamera, _gunModel;
     [SerializeField] Image _healthBar;
     AudioSource _audioSource;
     FixedJoystick _joystick;
     PhotonView _photonView;
-    Slider _progressSlider, _senstivity;
+    //Slider _progressSlider, _senstivity;
     [SerializeField] AudioClip _jumpSound, _gunSound;
     Rigidbody _rb;
     Vector3 _inputDir;
@@ -24,29 +24,29 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
 
     void Start()
     {
+        _audioSource = GetComponent<AudioSource>();
         _health = _maxhealth;
         _photonView = GetComponent<PhotonView>();
         _photonView.RPC("HealthUpdate", RpcTarget.All, _health);
-        _progressSlider = GameObject.FindGameObjectWithTag("Respawn").GetComponent<Slider>();
-        _senstivity = GameObject.FindGameObjectWithTag("Finish").GetComponent<Slider>();
+        //_progressSlider = GameObject.FindGameObjectWithTag("Respawn").GetComponent<Slider>();
+        //_senstivity = GameObject.FindGameObjectWithTag("Finish").GetComponent<Slider>();
         if (!PlayerPrefs.HasKey("sens"))
         {
             PlayerPrefs.SetFloat("sens", _sens);
-            _senstivity.value = _sens;
+            //_senstivity.value = _sens;
         }
         else
         {
             _sens = PlayerPrefs.GetFloat("sens");
-            _senstivity.value = _sens;
+            //_senstivity.value = _sens;
         }
         if (!_photonView.IsMine)
         {
             _thirdPersonCamera.SetActive(false);
             _firtPersonCamera.SetActive(false);
         }
-        _senstivity.onValueChanged.AddListener(SliderValueChange);
+        //_senstivity.onValueChanged.AddListener(SliderValueChange);
         //_joystick = FindFirstObjectByType<FixedJoystick>();
-        _audioSource = GetComponent<AudioSource>();
         _rb = GetComponent<Rigidbody>();
         _rb.freezeRotation = true;
         _rb.linearDamping = 4f;
@@ -177,9 +177,20 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
                 _thirdPersonCamera.SetActive(false);
             }
         }
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            if (_gunModel.activeSelf)
+            {
+                photonView.RPC("ObjectTurnOff", RpcTarget.AllBuffered, _gunModel.GetPhotonView().ViewID);
+            }
+            else
+            {
+                photonView.RPC("ObjectTurnOn", RpcTarget.AllBuffered, _gunModel.GetPhotonView().ViewID);
+            }
+        }
         //if (Input.GetKeyDown(KeyCode.Q))
         //{
-        //    if(SceneManager.GetActiveScene().buildIndex < 2)
+        //    if (SceneManager.GetActiveScene().buildIndex < 2)
         //    {
         //        _scene++;
         //        PlayerPrefs.SetInt("level", _scene);
@@ -224,13 +235,28 @@ public class PlayerMovement : MonoBehaviourPunCallbacks
         //    Debug.Log("mouse key Unclicked");
         //}
     }
+
+    [PunRPC]
+    void ObjectTurnOff(int viewId)
+    {
+        PhotonView _photonView = PhotonView.Find(viewId);
+        _photonView.gameObject.SetActive(false);
+    }
+
+    [PunRPC]
+    void ObjectTurnOn(int viewId)
+    {
+        PhotonView _photonView = PhotonView.Find(viewId);
+        _photonView.gameObject.SetActive(true);
+    }
+
     IEnumerator LoadingScreen(int _sceneIndex)
     {
         yield return new WaitForSeconds(0.1f);
         AsyncOperation _loadingScene = SceneManager.LoadSceneAsync(_sceneIndex);
         while (!_loadingScene.isDone)
         {
-            _progressSlider.value = _loadingScene.progress;
+            //_progressSlider.value = _loadingScene.progress;
             yield return null;
         }
     }

@@ -24,11 +24,12 @@ public class EnemyAi : MonoBehaviourPunCallbacks
     {
         if (_target != null)
         {
+            faceTarget(_target.position);
             if (_trigger && Vector3.Distance(transform.position, _target.position) > _agent.stoppingDistance)
             {
                 _animator.SetBool("Attack", false);
                 _animator.SetBool("Run", true);
-                _agent.SetDestination(_target.transform.position);
+                _agent.SetDestination(_target.position);
             }
             else if (Vector3.Distance(transform.position, _target.position) <= _agent.stoppingDistance)
             {
@@ -65,10 +66,19 @@ public class EnemyAi : MonoBehaviourPunCallbacks
 
     public void GotHit(GameObject _player)
     {
-        _target = _player.transform;
+        //_target = _player.transform;
+        photonView.RPC("TargetUpdate", RpcTarget.AllBuffered, _player.GetPhotonView().ViewID);
+        Debug.Log(_player.name);
         _health -= 20f;
         photonView.RPC("UpdateHealth", RpcTarget.AllBuffered, _health);
         _trigger = true;
+    }
+
+    [PunRPC]
+    void TargetUpdate(int viewId)
+    {
+        PhotonView _pv = PhotonView.Find(viewId);
+        _target = _pv.gameObject.transform;
     }
 
     public void Attack()
@@ -81,5 +91,13 @@ public class EnemyAi : MonoBehaviourPunCallbacks
     {
         //health update
         _health = newHealth;
+    }
+
+    void faceTarget(Vector3 _lookAt)
+    {
+        //faces target
+        Vector3 dir = (_lookAt - transform.position).normalized;
+        Quaternion lookRotation = Quaternion.LookRotation(new Vector3(dir.x, transform.position.y, dir.z));
+        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, 5f * Time.deltaTime);
     }
 }
